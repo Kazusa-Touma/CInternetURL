@@ -1,0 +1,205 @@
+#include <iostream>
+using namespace std;
+class CMyString {
+public:
+	CMyString() {}
+	CMyString(const char* input) {
+		int l = getlength(input), base = 1;
+		len = l;
+		while (base * 1024 < len) {
+			base++;
+		}
+		s = new char[base * 1024 + 1];//申请内存空间
+		copystring(s, input);
+	}
+	static int getlength(const char* str) {//获取str的长度
+		int len = 0;
+		while (*str++) {
+			len++;
+		}
+		return len;
+	}
+	static void copystring(char* s, const char* t) {//复制t数组到s数组中
+		while (*t) {
+			*s++ = *t++;
+		}
+		*s = '\0';
+	}
+	friend CMyString operator +(CMyString s1, CMyString s2) {//重载+运算符，为保证s1可从基础类型转化为class，使用友元函数
+		CMyString ret;
+		int len1 = s1.len, len2 = s2.len, base = 1;
+		while (base * 1024 < len1 + len2) {
+			base++;
+		}
+		ret.s = new char[base * 1024 + 1];//动态申请内存
+		ret.len = len1 + len2;
+		for (int i = 0; i < len1 + len2; i++) {//复制操作
+			if (i < len1) {
+				ret.s[i] = s1.s[i];
+			}
+			else {
+				ret.s[i] = s2.s[i - len1];
+			}
+		}
+		ret.s[len1 + len2] = '\0';//结束符
+		return ret;
+	}
+	friend CMyString operator +(CMyString s1, char c) {//重载+运算符，同上
+		CMyString ret;
+		int len1 = s1.len, base = 1;
+		while (base * 1024 < len1 + 1) {
+			base++;
+		}
+		ret.s = new char[base * 1024 + 1];
+		ret.len = len1 + 1;
+		for (int i = 0; i < len1 + 1; i++) {
+			if (i < len1) {
+				ret.s[i] = s1.s[i];
+			}
+			else {
+				ret.s[i] = c;
+			}
+		}
+		ret.s[len1 + 1] = '\0';
+		return ret;
+	}
+	friend CMyString operator -(CMyString s1, CMyString s2) {//重载-运算符，为保证s1能由基础类型转换为class，采用友元函数
+		CMyString ret;
+		int len1 = s1.len, len2 = s2.len, base = 1;
+		while (base * 1024 < len1 - len2) {
+			base++;
+		}
+		char* tmp = new char[len1];
+		copystring(tmp, s1.s);
+		ret.s = new char[base * 1024 + 1];
+		for (int i = 0; i < len1 - len2; i++) {//删除操作
+			if (tmp[i] == s2.s[0]) {
+				bool is_sub = true;
+				for (int j = 0; j < len2; j++) {//遍历判断是否为子串
+					if (tmp[i + j] != s2.s[j]) {
+						is_sub = false;
+						break;
+					}
+				}
+				if (is_sub) {
+					len1 -= len2;
+					for (int j = i; j < len1; j++) {//前移删除子串
+						tmp[j] = tmp[j + len2];
+					}
+				}
+			}
+		}
+		tmp[len1] = '\0';
+		ret.s = new char[base * 1024];
+		copystring(ret.s, tmp);
+		ret.len = len1;
+		return ret;
+	}
+	friend CMyString operator -(CMyString s1, char c) {//同上
+		CMyString ret;
+		int len1 = s1.len, base = 1;
+		while (base * 1024 < len1) {
+			base++;
+		}
+		char* tmp = new char[len1 + 1];
+		copystring(tmp, s1.s);
+		ret.s = new char[base * 1024 + 1];
+		for (int i = 0; i < len1; i++) {
+			if (tmp[i] == c) {
+				for (int j = i; j < len1 - 1; j++) {
+					tmp[j] = tmp[j + 1];
+				}
+				--len1;
+			}
+		}
+		tmp[len1] = '\0';
+		ret.s = new char[base * 1024];
+		copystring(ret.s, tmp);
+		ret.len = len1;
+		return ret;
+	}
+	friend ostream& operator <<(ostream& str, const CMyString& object) {//重载<<运算符
+		str << object.s;
+		return str;
+	}
+	int find(char c)//寻找指定字符，若找不到则返回-1
+	{
+		for (int i = 0; i < len; i++) {
+			if (c == s[i]) {
+				return i;
+			}
+		}
+		return -1;
+	}
+	int find(CMyString str) {//寻找指定字符串，若找不到则返回-1
+		int len1 = len, len2 = str.len;
+		for (int i = 0; i <= len1 - len2; i++) {
+			if (str.s[0] == s[i]) {
+				bool is_sub = true;
+				for (int j = 0; j < len2; j++) {
+					if (str.s[j] != s[i + j]) {
+						is_sub = false;
+						break;
+					}
+				}
+				if (is_sub) {
+					return i;
+				}
+			}
+		}
+		return -1;
+	}
+	CMyString Mid(int pos, int len) {//返回从pos开始长度为len的子串
+		CMyString ret;
+		int base = 1;
+		while (base * 1024 < len) {
+			base++;
+		}
+		ret.len = len;
+		ret.s = new char[base * 1024 + 1];
+		for (int i = 0; i < len; i++) {
+			ret.s[i] = s[i + pos];
+		}
+		ret.s[len] = '\0';
+		return ret;
+	}
+private:
+	char* s;
+	int len;
+};
+class CInternetURL {
+private:
+	CMyString str;//用CMyString作为CInternetURL的成员
+public:
+	CInternetURL(){}
+	CInternetURL(CMyString s) {
+		str = s;
+	}
+	CMyString getDomain() {
+		CMyString tmp(str);
+		tmp = tmp - "//";
+		int l = tmp.find("www"), r;
+		r = tmp.find('/');
+		return tmp.Mid(l, r - l);
+	}
+	CMyString getDomainCountry() {
+		CMyString tmp(str);
+		tmp = tmp - "//";
+		int l = tmp.find('/') - 2;
+		return tmp.Mid(l, 2);
+	}
+	CMyString getDomainType() {
+		CMyString tmp(str);
+		tmp = tmp - "//";
+		int l = tmp.find('/') - 6;
+		return tmp.Mid(l, 3);
+	}
+};
+int main()
+{
+	CInternetURL URL("https://www.bit.edu.cn/xww/lgxb21/067aa91b7524e7f9a43a5263633fcf4.htm");
+	cout << URL.getDomain() << endl;
+	cout << URL.getDomainCountry() << endl;
+	cout << URL.getDomainType() << endl;
+	return 0;
+}
